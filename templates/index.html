@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="static/1.jpeg" type="image/x-icon">
+  <title>RH - Inicio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Fondo degradado animado con colores llamativos y elegantes */
+    body {
+      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
+      background-size: 400% 400%;
+      animation: gradientBG 18s ease infinite;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes fadeInUp { 
+      from { opacity: 0; transform: translateY(16px);} 
+      to { opacity:1; transform: none; } 
+    }
+    .animate-fadeInUp { animation: fadeInUp .5s ease both; }
+    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
+  </style>
+</head>
+<body class="flex items-center justify-center p-6">
+  <div class="max-w-4xl w-full space-y-8">
+    <header class="flex items-center justify-between">
+      <div class="animate-fadeInUp">
+        <h1 class="text-4xl font-extrabold text-white drop-shadow">Sistema RH</h1>
+        <p class="text-gray-200 mt-1">Tengo sueñooooo</p>
+      </div>
+    </header>
+
+    <main class="grid md:grid-cols-3 gap-6">
+      <a href="/competencias" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp">
+        <h2 class="text-lg font-semibold text-gray-800">Competencias</h2>
+        <p class="mt-2 text-gray-500 text-sm">Agregar, listar y eliminar competencias.</p>
+      </a>
+
+      <a href="/capacitaciones" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp" style="animation-delay:0.12s">
+        <h2 class="text-lg font-semibold text-gray-800">Capacitaciones</h2>
+        <p class="mt-2 text-gray-500 text-sm">Administrar cursos y niveles (select moderno).</p>
+      </a>
+    </main>
+
+    <footer class="text-center text-sm text-gray-200">
+      By Saulo A. - Miguelina M - Jonatan S - Jeurys  
+      <code class="bg-gray-800 text-gray-100 px-2 py-1 rounded">Recursos Humanos</code>
+    </footer>
+  </div>
+</body>
+</html>

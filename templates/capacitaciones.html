@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="static/1.jpeg" type="image/x-icon">
+  <title>Capacitaciones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px);} to { opacity:1; transform:none; } }
+    .animate-fadeInUp { animation: fadeInUp .42s ease both; }
+    .soft-glow { box-shadow: 0 10px 30px rgba(2,6,23,0.06); }
+  </style>
+  <style>
+    /* Fondo degradado animado con colores llamativos y elegantes */
+    body {
+      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
+      background-size: 400% 400%;
+      animation: gradientBG 18s ease infinite;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes fadeInUp { 
+      from { opacity: 0; transform: translateY(16px);} 
+      to { opacity:1; transform: none; } 
+    }
+    .animate-fadeInUp { animation: fadeInUp .5s ease both; }
+    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
+  </style>
+  <script>
+    function confirmarEliminacion(id) {
+      if (!id) return;
+      if (confirm("¿Seguro que deseas eliminar esta capacitación?")) {
+        window.location.href = "/capacitaciones/eliminar/" + id;
+      }
+    }
+    function limpiarFormulario(formId) {
+      const f = document.getElementById(formId);
+      if (f) setTimeout(()=>f.reset(), 50);
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <header class="flex items-center justify-between">
+      <h1 class="text-3xl text-white font-bold animate-fadeInUp">Capacitaciones</h1>
+      <a href="/" class="text-sm text-white hover:underline">Volver</a>
+    </header>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <form id="formCap" action="/capacitaciones/agregar" method="POST" class="md:col-span-1 bg-white p-4 rounded-xl soft-glow animate-fadeInUp" onsubmit="limpiarFormulario('formCap')">
+        <h2 class="font-semibold mb-3">➕ Agregar capacitación</h2>
+        <input name="nombre" placeholder="Nombre" required class="w-full p-2 border rounded mb-3">
+        <select name="nivel" required class="w-full p-2 border rounded mb-3">
+          <option value="">-- Selecciona nivel --</option>
+          {% for n in niveles %}
+          <option value="{{ n }}">{{ n }}</option>
+          {% endfor %}
+        </select>
+        <label class="text-sm text-gray-600">Fecha desde</label>
+        <input name="fecha_desde" type="date" class="w-full p-2 border rounded mb-3">
+        <label class="text-sm text-gray-600">Fecha hasta</label>
+        <input name="fecha_hasta" type="date" class="w-full p-2 border rounded mb-3">
+        <input name="Salario" placeholder="Salario" type="number" class="w-full p-2 border rounded mb-4">
+        <button class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">Guardar</button>
+      </form>
+
+      <div class="md:col-span-2 bg-white p-4 rounded-xl soft-glow animate-fadeInUp">
+        <h2 class="font-semibold mb-3">📋 Lista</h2>
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr><th class="p-2">ID</th><th class="p-2">Nombre</th><th class="p-2">Departamento</th><th class="p-2">Desde</th><th class="p-2">Hasta</th><th class="p-2">Salario</th><th class="p-2">Acciones</th></tr>
+            </thead>
+            <tbody>
+              {% for c in capacitaciones %}
+              <tr class="border-t hover:bg-gray-50">
+                <td class="p-2">{{ c[0] }}</td>
+                <td class="p-2">{{ c[1] }}</td>
+                <td class="p-2">{{ c[2] }}</td>
+                <td class="p-2">{{ c[3] }}</td>
+                <td class="p-2">{{ c[4] }}</td>
+                <td class="p-2">{{ c[5] }}</td>
+                <td class="p-2">
+                  <button onclick="confirmarEliminacion('{{ c[0] }}')" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Eliminar</button>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="p-4 text-center text-gray-400">No hay capacitaciones registradas.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
