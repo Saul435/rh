@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Completar Perfil - RH</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-6 bg-gradient-to-r from-slate-900 via-teal-700 to-indigo-700 min-h-screen">
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl mt-8">
+    <h1 class="text-2xl font-bold mb-4">Completar Perfil ({{ rol }})</h1>
+    <p class="mb-4 text-sm text-gray-600">Usuario: {{ usuario }}. Rellena los datos para completar tu registro.</p>
+
+    {% if error %}
+      <div class="bg-red-100 text-red-700 p-3 rounded mb-3">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" class="grid grid-cols-1 gap-3">
+      <label>Cédula <input name="cedula" required class="w-full p-2 border rounded"></label>
+      <label>Nombre <input name="nombre" required class="w-full p-2 border rounded"></label>
+      <label>Fecha de Nacimiento <input type="date" name="fecha_nacimiento" class="w-full p-2 border rounded"></label>
+      <label>Dirección <input name="direccion" class="w-full p-2 border rounded"></label>
+      <label>Teléfono <input name="telefono" class="w-full p-2 border rounded"></label>
+      <label>Correo <input type="email" name="correo" class="w-full p-2 border rounded"></label>
+      <label>Departamento <input name="departamento" class="w-full p-2 border rounded"></label>
+      <label>Puesto <input name="puesto" class="w-full p-2 border rounded"></label>
+      <label>Fecha de Ingreso <input type="date" name="fecha_ingreso" class="w-full p-2 border rounded"></label>
+      <label>Salario Base <input type="number" step="0.01" name="salario_base" class="w-full p-2 border rounded"></label>
+      <label>Estado
+        <select name="estado" class="w-full p-2 border rounded">
+          <option>Activo</option>
+          <option>Inactivo</option>
+        </select>
+      </label>
+      <div class="flex justify-end">
+        <button class="bg-indigo-600 text-white px-4 py-2 rounded">Guardar</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

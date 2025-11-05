@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard - {{ empleado['nombre'] }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
+      background-size: 400% 400%;
+      animation: gradientBG 18s ease infinite;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;} }
+    .animate-fadeInUp { animation: fadeInUp .5s ease both; }
+    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
+    .autocomplete-suggestions { max-height: 180px; overflow:auto; border-radius: 0.5rem; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+    @keyframes fadeOut { from{opacity:1;} to{opacity:0;transform:translateY(-10px);} }
+    .toast { animation: fadeIn .3s ease both; }
+    .toast.hide { animation: fadeOut .5s ease forwards; }
+  </style>
+</head>
+<!--<body class="p-6 bg-gradient-to-r from-slate-900 via-teal-700 to-indigo-700 min-h-screen">-->
+<body class="p-6">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <header class="flex justify-between items-center text-white">
+      <div>
+        <h1 class="text-3xl font-bold">Hola, {{ empleado['nombre'] }}</h1>
+        <p class="text-sm">Puesto: {{ empleado['puesto'] }} — Departamento: {{ empleado['departamento'] }}</p>
+      </div>
+      <div>
+         <a href="/" class="bg-white text-indigo-700 px-4 py-2 rounded shadow">Volver</a>
+        <a href="/logout" class="bg-white text-indigo-700 px-3 py-2 rounded">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white p-4 rounded shadow">
+        <h3 class="font-semibold">Evaluaciones recientes</h3>
+        <p class="text-2xl font-bold mt-2">{{ evaluaciones|length }}</p>
+      </div>
+      <div class="bg-white p-4 rounded shadow">
+        <h3 class="font-semibold">Promedio puntaje</h3>
+        <p class="text-2xl font-bold mt-2">{{ promedio_puntaje or '-' }}</p>
+      </div>
+      <div class="bg-white p-4 rounded shadow">
+        <h3 class="font-semibold">Indicadores generales</h3>
+        <p class="text-sm">Empleados: {{ total_empleados }}</p>
+        <p class="text-sm">Cursos: {{ cursos_disponibles }}</p>
+      </div>
+    </section>
+
+    <section class="bg-white p-4 rounded shadow">
+      <h3 class="font-semibold mb-2">Mis evaluaciones</h3>
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead><tr class="text-left">
+            <th>Fecha</th><th>Criterio</th><th>Puntaje</th><th>Resultado</th><th>Observaciones</th>
+          </tr></thead>
+          <tbody>
+            {% for ev in evaluaciones %}
+            <tr class="border-t">
+              <td class="py-2">{{ ev['fecha'] }}</td>
+              <td>{{ ev['criterio'] }}</td>
+              <td>{{ ev['puntaje'] }}</td>
+              <td>{{ ev['resultado'] or '-' }}</td>
+              <td>{{ ev['observaciones'] or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="py-3 text-gray-500">No tienes evaluaciones registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

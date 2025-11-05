@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="static/1.jpeg" type="image/x-icon">
+  <title>Gestión de Empleados</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
+      background-size: 400% 400%;
+      animation: gradientBG 18s ease infinite;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: none; }
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; transform: none; }
+        to { opacity: 0; transform: translateY(-10px); }
+    }
+    .toast {
+        animation: fadeInUp 0.4s ease both;
+        transition: all 0.4s ease;
+    }
+    .toast.hide {
+        animation: fadeOut 0.5s ease forwards;
+    }
+  </style>
+</head>
+<body class="p-6">
+    <!---comienzo de los mensajes-->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-50">
+      {% for category, message in messages %}
+        <div
+          class="toast animate-fade-in-up flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg max-w-sm text-sm font-medium
+          {% if category == 'success' %}
+            bg-gradient-to-r from-emerald-500 to-teal-500 text-white border border-emerald-300
+          {% elif category == 'error' %}
+            bg-gradient-to-r from-rose-500 to-pink-500 text-white border border-rose-300
+          {% else %}
+            bg-gray-700 text-white
+          {% endif %}"
+        >
+          {% if category == 'success' %}
+            ✅
+          {% elif category == 'error' %}
+            ⚠️
+          {% else %}
+            ℹ️
+          {% endif %}
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!---fin de los mensajes-->
+  <div class="max-w-6xl mx-auto bg-white rounded-2xl p-8 soft-glow">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">
+        {% if editar %}✏️ Editar Empleado{% else %}🧑‍💼 Registro de Empleados{% endif %}
+      </h1>
+      <a href="/" class="text-indigo-600 hover:underline">← Volver al inicio</a>
+    </div>
+    {% if mensaje %}
+    <div class="mb-4 p-3 rounded text-white 
+                {% if tipo == 'success' %}bg-green-500{% else %}bg-red-500{% endif %}">
+        {{ mensaje }}
+    </div>
+    {% endif %}
+
+    <!-- FORMULARIO -->
+    <form action="{% if editar %}/empleados/editar/{{ editar[0] }}{% else %}/empleados/agregar{% endif %}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Cédula</label>
+        <input type="text" name="cedula" value="{{ editar[1] if editar else '' }}" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Nombre</label>
+        <input type="text" name="nombre" value="{{ editar[2] if editar else '' }}" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Fecha de Nacimiento</label>
+        <input type="date" name="fecha_nacimiento" value="{{ editar[3] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Dirección</label>
+        <input type="text" name="direccion" value="{{ editar[4] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Teléfono</label>
+        <input type="text" name="telefono" value="{{ editar[5] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Correo</label>
+        <input type="email" name="correo" value="{{ editar[6] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Departamento</label>
+        <input type="text" name="departamento" value="{{ editar[7] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Puesto</label>
+        <input type="text" name="puesto" value="{{ editar[8] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Fecha de Ingreso</label>
+        <input type="date" name="fecha_ingreso" value="{{ editar[9] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Salario Base</label>
+        <input type="number" step="0.01" name="salario_base" value="{{ editar[10] if editar else '' }}" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-gray-700 font-medium mb-1">Estado</label>
+        <select name="estado" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+          <option value="Activo" {% if editar and editar[11] == "Activo" %}selected{% endif %}>Activo</option>
+          <option value="Inactivo" {% if editar and editar[11] == "Inactivo" %}selected{% endif %}>Inactivo</option>
+        </select>
+      </div>
+      <div class="md:col-span-2 flex justify-between">
+        {% if editar %}
+        <a href="/empleados" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 transition">Cancelar</a>
+        {% endif %}
+        <button class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 transition">
+          {% if editar %}Actualizar{% else %}Guardar{% endif %}
+        </button>
+      </div>
+    </form>
+
+    <!-- TABLA -->
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">📋 Lista de Empleados</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-300">
+        <thead class="bg-indigo-600 text-white">
+          <tr>
+            <th class="px-3 py-2 text-left">Cédula</th>
+            <th class="px-3 py-2 text-left">Nombre</th>
+            <th class="px-3 py-2 text-left">Departamento</th>
+            <th class="px-3 py-2 text-left">Puesto</th>
+            <th class="px-3 py-2 text-left">Estado</th>
+            {% if session.get('rol') in ['admin'] %}
+            <th class="px-3 py-2 text-center">Acciones</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in empleados %}
+          <tr class="border-b hover:bg-gray-50">
+            <td class="px-3 py-2">{{ emp[1] }}</td>
+            <td class="px-3 py-2">{{ emp[2] }}</td>
+            <td class="px-3 py-2">{{ emp[7] }}</td>
+            <td class="px-3 py-2">{{ emp[8] }}</td>
+            <td class="px-3 py-2">{{ emp[11] }}</td>
+            <td class="px-3 py-2 text-center">
+              {% if session.get('rol') in ['admin'] %}
+              <a href="/empleados/editar/{{ emp[0] }}" class="text-blue-600 hover:underline mr-3">Editar</a>
+              <a href="/empleados/eliminar/{{ emp[0] }}" class="text-red-600 hover:underline" onclick="return confirm('¿Eliminar este empleado?')">Eliminar</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-gray-500">No hay empleados registrados.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+  // Desaparece cada toast con un pequeño retraso y animación
+  setTimeout(() => {
+    document.querySelectorAll('.toast').forEach((toast, i) => {
+      setTimeout(() => toast.classList.add('hide'), i * 150);
+      setTimeout(() => toast.remove(), i * 150 + 800);
+    });
+  }, 3500);
+</script>
+
+
+</body>
+</html>
