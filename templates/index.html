@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="static/1.jpeg" type="image/x-icon">
-  <title>RH - Inicio</title>
+  <title>RH</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* Fondo degradado animado con colores llamativos y elegantes */
@@ -29,28 +29,44 @@
   </style>
 </head>
 <body class="flex items-center justify-center p-6">
+  
+  
   <div class="max-w-4xl w-full space-y-8">
     <header class="flex items-center justify-between">
       <div class="animate-fadeInUp">
         <h1 class="text-4xl font-extrabold text-white drop-shadow">Sistema RH</h1>
-        <p class="text-gray-200 mt-1">Tengo sueñooooo</p>
+        <a href="/logout" class="text-sm text-white hover:underline">Cerrar sesión</a>
+        <p class="text-gray-200 mt-1">Bienvenido {{ usuario }}</p>
       </div>
     </header>
 
     <main class="grid md:grid-cols-3 gap-6">
-      <a href="/competencias" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp">
-        <h2 class="text-lg font-semibold text-gray-800">Competencias</h2>
-        <p class="mt-2 text-gray-500 text-sm">Agregar, listar y eliminar competencias.</p>
+      {% if session.get('rol') in ['admin','supervisor'] %}
+      <a href="/empleados" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp" style="animation-delay:0.24s">
+        <h2 class="text-lg font-semibold text-gray-800">Empleados</h2>
+        <p class="mt-2 text-gray-500 text-sm">Registrar y administrar empleados.</p>
       </a>
-
+      
       <a href="/capacitaciones" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp" style="animation-delay:0.12s">
         <h2 class="text-lg font-semibold text-gray-800">Capacitaciones</h2>
-        <p class="mt-2 text-gray-500 text-sm">Administrar cursos y niveles (select moderno).</p>
+        <p class="mt-2 text-gray-500 text-sm">Administrar cursos y niveles.</p>
       </a>
+      
+      <a href="/evaluaciones" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp" style="animation-delay:0.18s">
+        <h2 class="text-lg font-semibold text-gray-800">Evaluaciones</h2>
+        <p class="mt-2 text-gray-500 text-sm">Registrar y ver evaluaciones de desempeño.</p>
+      </a>
+      {% endif %}
+      {% if session.get('rol') in ['empleado'] %}
+      <a href="/dashboard" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp" style="animation-delay:0.24s">
+        <h2 class="text-lg font-semibold text-gray-800">Tablero</h2>
+        <p class="mt-2 text-gray-500 text-sm">Ver tus datos mas relebantes y notificaciones.</p>
+      </a>
+      {% endif %}
     </main>
 
     <footer class="text-center text-sm text-gray-200">
-      By Saulo A. - Miguelina M - Jonatan S - Jeurys  
+      By Saulo A. - Miguelina M. - Jonatan S. - Jeurys  
       <code class="bg-gray-800 text-gray-100 px-2 py-1 rounded">Recursos Humanos</code>
     </footer>
   </div>
