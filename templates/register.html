@@ -24,6 +24,35 @@
   </style>
 </head>
 <body class="flex items-center justify-center p-6">
+  <!---comienzo de los mensajes-->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-50">
+      {% for category, message in messages %}
+        <div
+          class="toast animate-fade-in-up flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg max-w-sm text-sm font-medium
+          {% if category == 'success' %}
+            bg-gradient-to-r from-emerald-500 to-teal-500 text-white border border-emerald-300
+          {% elif category == 'error' %}
+            bg-gradient-to-r from-rose-500 to-pink-500 text-white border border-rose-300
+          {% else %}
+            bg-gray-700 text-white
+          {% endif %}"
+        >
+          {% if category == 'success' %}
+            ✅
+          {% elif category == 'error' %}
+            ⚠️
+          {% else %}
+            ℹ️
+          {% endif %}
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!---fin de los mensajes-->
   <div class="bg-white p-8 rounded-2xl soft-glow w-full max-w-md animate-fadeInUp">
     <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">🧑‍💻 Registrar Usuario</h1>
 
