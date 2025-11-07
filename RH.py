@@ -159,7 +159,7 @@ def query_db(query, params=(), fetch=False, retries=2, delay=0.1):
 
         except sqlite3.IntegrityError as e:
             if conn: conn.close()
-            flash("⚠️ Ya existe un registro con esos datos únicos (usuario o cédula).", "error")
+            flash(" Ya existe un registro con esos datos únicos (usuario o cédula).", "error")
             print(f"[INTEGRITY ERROR] {e}")
             return False
 
@@ -169,17 +169,17 @@ def query_db(query, params=(), fetch=False, retries=2, delay=0.1):
                 time.sleep(delay)
                 continue
             else:
-                flash("⚠️ Error al acceder a la base de datos.", "error")
+                flash(" Error al acceder a la base de datos.", "error")
                 print(f"[SQL ERROR] {e}")
                 return False
 
         except Exception as e:
             if conn: conn.close()
-            flash("⚠️ Error inesperado en la base de datos.", "error")
+            flash(" Error inesperado en la base de datos.", "error")
             print(f"[ERROR GENERAL] {e}")
             return False
 
-    flash("⚠️ La base de datos está ocupada. Intenta nuevamente.", "error")
+    flash(" La base de datos está ocupada. Intenta nuevamente.", "error")
     return False
 
 
