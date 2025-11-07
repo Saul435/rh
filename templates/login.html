@@ -30,6 +30,21 @@
 
   <div class="bg-white p-8 rounded-2xl soft-glow w-full max-w-md animate-fadeInUp">
     <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">🔐 Iniciar Sesión</h1>
+
+    <div class="relative flex justify-end mb-4">
+    <!-- Botón de ayuda -->
+    <button type="button"
+      class="w-6 h-6 rounded-full bg-indigo-500 text-white text-sm font-bold
+            hover:bg-indigo-600 transition relative group">
+      ?
+      <span class="absolute hidden group-hover:block w-48 text-xs
+                  bg-gray-900 text-white p-2 rounded shadow-lg
+                  -right-2 top-8 z-20">
+        Si eres empleado tu nombre sin espacios es tu user y tu contraseña la cedula.
+      </span>
+    </button>
+  </div>
+
     {% if error %}
     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
     {{ error }}

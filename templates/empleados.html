@@ -83,11 +83,11 @@
     <!-- FORMULARIO -->
     <form action="{% if editar %}/empleados/editar/{{ editar[0] }}{% else %}/empleados/agregar{% endif %}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
       <div>
-        <label class="block text-gray-700 font-medium mb-1">Cédula</label>
+        <label class="block text-gray-700 font-medium mb-1">Cédula(Contraseña del empleado)</label>
         <input type="text" name="cedula" value="{{ editar[1] if editar else '' }}" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
       </div>
       <div>
-        <label class="block text-gray-700 font-medium mb-1">Nombre</label>
+        <label class="block text-gray-700 font-medium mb-1">Nombre(Usuario del empleado)</label>
         <input type="text" name="nombre" value="{{ editar[2] if editar else '' }}" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
       </div>
       <div>
@@ -160,9 +160,9 @@
           <tr class="border-b hover:bg-gray-50">
             <td class="px-3 py-2">{{ emp[1] }}</td>
             <td class="px-3 py-2">{{ emp[2] }}</td>
-            <td class="px-3 py-2">{{ emp[7] }}</td>
             <td class="px-3 py-2">{{ emp[8] }}</td>
-            <td class="px-3 py-2">{{ emp[11] }}</td>
+            <td class="px-3 py-2">{{ emp[9] }}</td>
+            <td class="px-3 py-2">{{ emp[12] }}</td>
             <td class="px-3 py-2 text-center">
               {% if session.get('rol') in ['admin'] %}
               <a href="/empleados/editar/{{ emp[0] }}" class="text-blue-600 hover:underline mr-3">Editar</a>
