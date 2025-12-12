@@ -65,14 +65,19 @@
     </div>
   {% endif %}
 {% endwith %}
-<!---fin de los mensajes-->
-  <div class="max-w-6xl mx-auto bg-white rounded-2xl p-8 soft-glow">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold text-gray-800">
+
+<div class="flex max-w-6xl mx-auto justify-between  items-center mb-6">
+      <h1 class="text-3xl font-bold text-white-800">
         {% if editar %}✏️ Editar Empleado{% else %}🧑‍💼 Registro de Empleados{% endif %}
       </h1>
-      <a href="/" class="text-indigo-600 hover:underline">← Volver al inicio</a>
+      <div class="space-x-4">
+      <a href="/" class="bg-white text-indigo-700 px-4 py-2 rounded shadow">Volver</a>
+      <a href="/logout" class="text-sm text-gray-100 underline">Cerrar sesión</a>
     </div>
+    </div>
+    
+<!---fin de los mensajes-->
+  <div class="max-w-6xl mx-auto bg-white rounded-2xl p-8 soft-glow">
     {% if mensaje %}
     <div class="mb-4 p-3 rounded text-white 
                 {% if tipo == 'success' %}bg-green-500{% else %}bg-red-500{% endif %}">
