@@ -1,206 +1,74 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Capacitaciones - RH</title>
+  <title>Completar Perfil - RH</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
-      background-size: 400% 400%;
-      animation: gradientBG 18s ease infinite;
-      min-height: 100vh;
-    }
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;} }
-    .animate-fadeInUp { animation: fadeInUp .5s ease both; }
-    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
-    .autocomplete-suggestions { max-height: 180px; overflow:auto; border-radius: 0.5rem; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
-    @keyframes fadeOut { from{opacity:1;} to{opacity:0;transform:translateY(-10px);} }
-    .toast { animation: fadeIn .3s ease both; }
-    .toast.hide { animation: fadeOut .5s ease forwards; }
-  </style>
 </head>
-<body class="p-6">
+<body class="p-6 bg-gradient-to-r from-slate-900 via-teal-700 to-indigo-700 min-h-screen">
 
-  <!-- Toaster -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
+  <!---comienzo de los mensajes-->
+    {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-  <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-50">
-    {% for category, message in messages %}
-      <div class="toast flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium
-        {% if category == 'success' %}
-          bg-gradient-to-r from-emerald-500 to-teal-500 text-white
-        {% else %}
-          bg-gradient-to-r from-rose-500 to-pink-500 text-white
-        {% endif %}
-      ">
-        {{ message }}
-      </div>
-    {% endfor %}
-  </div>
+    <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-50">
+      {% for category, message in messages %}
+        <div
+          class="toast animate-fade-in-up flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg max-w-sm text-sm font-medium
+          {% if category == 'success' %}
+            bg-gradient-to-r from-emerald-500 to-teal-500 text-white border border-emerald-300
+          {% elif category == 'error' %}
+            bg-gradient-to-r from-rose-500 to-pink-500 text-white border border-rose-300
+          {% else %}
+            bg-gray-700 text-white
+          {% endif %}"
+        >
+          {% if category == 'success' %}
+            ✅
+          {% elif category == 'error' %}
+            ⚠️
+          {% else %}
+            ℹ️
+          {% endif %}
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
   {% endif %}
-  {% endwith %}
+{% endwith %}
+<!---fin de los mensajes-->
 
-  <div class="max-w-6xl mx-auto space-y-6">
-    <header class="flex items-center justify-between text-white">
-      <div>
-        <h1 class="text-3xl font-extrabold">📘 Gestión de Capacitaciones</h1>
-        <p class="text-sm text-gray-200">Usuario: {{ session.get('usuario') }}</p>
-      </div>
-      <div class="space-x-4">
-        <a href="/" class="bg-white text-indigo-700 px-4 py-2 rounded shadow">Volver</a>
-        <a href="/logout" class="text-sm text-gray-100 underline">Cerrar sesión</a>
-      </div>
-    </header>
 
-    <!-- Formulario -->
-    <section class="bg-white p-6 rounded-xl soft-glow animate-fadeInUp">
-      <h2 class="text-lg font-semibold text-gray-800 mb-4">Agregar capacitación</h2>
-      <form action="/capacitaciones/agregar" method="POST" class="grid md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Curso *</label>
-          <input name="curso" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Empleado (nombre o cédula)</label>
-          <input id="empleado_input" name="empleado_input" autocomplete="off" placeholder="Buscar empleado..."
-                 class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
-          <input type="hidden" id="empleado_id" name="empleado_id">
-          <div id="suggestions" class="mt-1 bg-white border border-gray-300 rounded hidden"></div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Impacto</label>
-          <input name="impacto" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Descripción</label>
-          <textarea name="descripcion" rows="2" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Fecha inicio</label>
-          <input type="date" name="fecha_inicio" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Fecha fin</label>
-          <input type="date" name="fecha_fin" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div class="md:col-span-3 flex items-center gap-3">
-          <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded">Agregar</button>
-          <small class="text-gray-500">Si no seleccionas empleado, se marcará como capacitación <strong>General</strong>.</small>
-        </div>
-      </form>
-    </section>
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl mt-8">
+    <h1 class="text-2xl font-bold mb-4">Completar Perfil ({{ rol }})</h1>
+    <p class="mb-4 text-sm text-gray-600">Usuario: {{ usuario }}. Rellena los datos para completar tu registro.</p>
 
-    <!-- Tabla -->
-    <section class="bg-white p-6 rounded-xl soft-glow animate-fadeInUp">
-      <h2 class="text-lg font-semibold text-gray-800 mb-4">Capacitaciones registradas</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full table-auto">
-          <thead><tr class="text-left">
-            <th class="px-4 py-2">Curso</th>
-            <th class="px-4 py-2">Empleado</th>
-            <th class="px-4 py-2">Fechas</th>
-            <th class="px-4 py-2">Impacto</th>
-            <th class="px-4 py-2">Asistencias</th>
-            <th class="px-4 py-2">Acciones</th>
-          </tr></thead>
-          <tbody>
-            {% if capacitaciones %}
-              {% for c in capacitaciones %}
-              <tr class="border-t hover:bg-gray-50">
-                <td class="px-4 py-3">{{ c['curso'] }}</td>
-                <td class="px-4 py-3">
-                  {% if c['empleado_nombre'] %}
-                    {{ c['empleado_nombre'] }} <span class="text-xs text-gray-500">({{ c['empleado_cedula'] }})</span>
-                  {% else %}
-                    <span class="text-gray-500">General</span>
-                  {% endif %}
-                </td>
-                <td class="px-4 py-3">{{ c['fecha_inicio'] or '-' }} — {{ c['fecha_fin'] or '-' }}</td>
-                <td class="px-4 py-3">{{ c['impacto'] or '-' }}</td>
-                <td class="px-4 py-3"><span id="asist-{{ c['id'] }}">{{ c['asistencias'] or 0 }}</span></td>
-                <td class="px-4 py-3 space-x-2">
-                  <button data-id="{{ c['id'] }}" class="btn-asistencia bg-green-500 text-white px-3 py-1 rounded">+1</button>
-                {% if session.get('rol') in ['admin'] %}
-                  <a href="/capacitaciones/eliminar/{{ c['id'] }}" onclick="return confirm('¿Eliminar esta capacitación?');"
-                     class="bg-red-500 text-white px-3 py-1 rounded">Eliminar</a>
-                     {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            {% else %}
-              <tr><td colspan="6" class="text-center text-gray-500 py-4">No hay capacitaciones registradas.</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    {% if error %}
+      <div class="bg-red-100 text-red-700 p-3 rounded mb-3">{{ error }}</div>
+    {% endif %}
 
-    <footer class="text-center text-gray-200 text-sm">By Saulo A. - Recursos Humanos</footer>
+    <form method="POST" action="/completar_perfil" class="grid grid-cols-1 gap-3">
+      <label>Cédula <input name="cedula" required class="w-full p-2 border rounded"></label>
+      <label>Nombre <input name="nombre" required class="w-full p-2 border rounded"></label>
+      <label>Fecha de Nacimiento <input type="date" name="fecha_nacimiento" class="w-full p-2 border rounded"></label>
+      <label>Dirección <input name="direccion" class="w-full p-2 border rounded"></label>
+      <label>Teléfono <input name="telefono" class="w-full p-2 border rounded"></label>
+      <label>Correo <input type="email" name="correo" class="w-full p-2 border rounded"></label>
+      <label>Departamento <input name="departamento" class="w-full p-2 border rounded"></label>
+      <label>Puesto <input name="puesto" class="w-full p-2 border rounded"></label>
+      <label>Fecha de Ingreso <input type="date" name="fecha_ingreso" class="w-full p-2 border rounded"></label>
+      <label>Salario Base <input type="number" step="0.01" name="salario_base" class="w-full p-2 border rounded"></label>
+      <label>Estado
+        <select name="estado" class="w-full p-2 border rounded">
+          <option>Activo</option>
+          <option>Inactivo</option>
+        </select>
+      </label>
+      <div class="flex gap-3 mt-4">
+    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded">Guardar</button>
+    <a href="/cancelar_registro" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</a>
   </div>
-
-  <script>
-    // Autocomplete empleados
-    const input = document.getElementById('empleado_input');
-    const suggestions = document.getElementById('suggestions');
-    const hiddenId = document.getElementById('empleado_id');
-    let timer = null;
-
-    input.addEventListener('input', e => {
-      clearTimeout(timer);
-      const q = e.target.value.trim();
-      hiddenId.value = "";
-      suggestions.innerHTML = "";
-      suggestions.classList.add('hidden');
-      if (!q) return;
-      timer = setTimeout(() => {
-        fetch(`/empleados/search?q=${encodeURIComponent(q)}`)
-          .then(r => r.json())
-          .then(data => {
-            suggestions.innerHTML = "";
-            if (!data.length) return;
-            data.forEach(emp => {
-              const div = document.createElement('div');
-              div.className = "px-3 py-2 hover:bg-indigo-50 cursor-pointer";
-              div.innerHTML = `<b>${emp.nombre}</b> <span class='text-sm text-gray-500'>(${emp.cedula})</span>`;
-              div.onclick = () => {
-                input.value = emp.nombre;
-                hiddenId.value = emp.id;
-                suggestions.classList.add('hidden');
-              };
-              suggestions.appendChild(div);
-            });
-            suggestions.classList.remove('hidden');
-          });
-      }, 250);
-    });
-
-    // Asistencias
-    document.querySelectorAll('.btn-asistencia').forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm('¿Sumar asistencia?')) return;
-        const id = btn.dataset.id;
-        const resp = await fetch(`/capacitaciones/asistencia/${id}`, { method: 'POST' });
-        const data = await resp.json();
-        if (data.ok) {
-          document.getElementById(`asist-${id}`).textContent = data.asistencias;
-        } else alert(data.msg || 'Error al sumar asistencia');
-      };
-    });
-
-    // Auto-remover toasts
-    setTimeout(() => {
-      document.querySelectorAll('.toast').forEach((el,i)=>{
-        setTimeout(()=>{ el.classList.add('hide'); el.remove(); }, i*300 + 3500);
-      });
-    }, 200);
-  </script>
+    </form>
+  </div>
 </body>
 </html>
