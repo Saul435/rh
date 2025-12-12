@@ -56,11 +56,24 @@
         <h2 class="text-lg font-semibold text-gray-800">Evaluaciones</h2>
         <p class="mt-2 text-gray-500 text-sm">Registrar y ver evaluaciones de desempeño.</p>
       </a>
+
+      <a href="/nomina" class="block bg-white p-6 rounded-xl soft-glow hover:-translate-y-1 transition">
+        <h2 class="text-lg font-semibold text-gray-800">Nómina</h2>
+        <p class="text-gray-500 text-sm">Gestión automática de pagos y comprobantes.</p>
+      </a>
+
       {% endif %}
       {% if session.get('rol') in ['empleado'] %}
       <a href="/dashboard" class="block bg-white p-6 rounded-xl soft-glow transform hover:-translate-y-1 hover:shadow-xl transition animate-fadeInUp" style="animation-delay:0.24s">
         <h2 class="text-lg font-semibold text-gray-800">Tablero</h2>
         <p class="mt-2 text-gray-500 text-sm">Ver tus datos mas relebantes y notificaciones.</p>
+      </a>
+      {% endif %}
+      
+      {% if session.get('rol') in ['admin'] %}
+      <a href="/solicitudes" class="block bg-white p-6 rounded-xl soft-glow hover:-translate-y-1 transition">
+        <h2 class="text-lg font-semibold text-gray-800">Solicitudes</h2>
+        <p class="text-gray-500 text-sm">Gestión de nuevos empleados a la plataforma.</p>
       </a>
       {% endif %}
     </main>
