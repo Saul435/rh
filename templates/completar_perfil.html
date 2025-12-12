@@ -7,6 +7,38 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="p-6 bg-gradient-to-r from-slate-900 via-teal-700 to-indigo-700 min-h-screen">
+
+  <!---comienzo de los mensajes-->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-50">
+      {% for category, message in messages %}
+        <div
+          class="toast animate-fade-in-up flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg max-w-sm text-sm font-medium
+          {% if category == 'success' %}
+            bg-gradient-to-r from-emerald-500 to-teal-500 text-white border border-emerald-300
+          {% elif category == 'error' %}
+            bg-gradient-to-r from-rose-500 to-pink-500 text-white border border-rose-300
+          {% else %}
+            bg-gray-700 text-white
+          {% endif %}"
+        >
+          {% if category == 'success' %}
+            ✅
+          {% elif category == 'error' %}
+            ⚠️
+          {% else %}
+            ℹ️
+          {% endif %}
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!---fin de los mensajes-->
+
+
   <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl mt-8">
     <h1 class="text-2xl font-bold mb-4">Completar Perfil ({{ rol }})</h1>
     <p class="mb-4 text-sm text-gray-600">Usuario: {{ usuario }}. Rellena los datos para completar tu registro.</p>
@@ -15,7 +47,7 @@
       <div class="bg-red-100 text-red-700 p-3 rounded mb-3">{{ error }}</div>
     {% endif %}
 
-    <form method="POST" class="grid grid-cols-1 gap-3">
+    <form method="POST" action="/completar_perfil" class="grid grid-cols-1 gap-3">
       <label>Cédula <input name="cedula" required class="w-full p-2 border rounded"></label>
       <label>Nombre <input name="nombre" required class="w-full p-2 border rounded"></label>
       <label>Fecha de Nacimiento <input type="date" name="fecha_nacimiento" class="w-full p-2 border rounded"></label>
@@ -32,9 +64,10 @@
           <option>Inactivo</option>
         </select>
       </label>
-      <div class="flex justify-end">
-        <button class="bg-indigo-600 text-white px-4 py-2 rounded">Guardar</button>
-      </div>
+      <div class="flex gap-3 mt-4">
+    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded">Guardar</button>
+    <a href="/cancelar_registro" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancelar</a>
+  </div>
     </form>
   </div>
 </body>
