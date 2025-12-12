@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 import re
 import time
 import sqlite3
@@ -28,7 +30,9 @@ def inicializar_bd():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        rol TEXT DEFAULT 'invitado'
+        rol TEXT DEFAULT 'invitado',
+        estado_aprobacion TEXT DEFAULT 'pendiente',
+        estado_perfil TEXT DEFAULT 'incompleto'
     );
 
     CREATE TABLE IF NOT EXISTS Empleados (
@@ -101,14 +105,19 @@ def inicializar_bd():
         descripcion TEXT NOT NULL,
         estado TEXT DEFAULT 'Activo'
     );
-
+    
      
     """)
     cursor.execute("SELECT * FROM Usuarios WHERE usuario='admin'")
     if not cursor.fetchone():
         hashed_admin = generate_password_hash("admin")
         cursor.execute("INSERT INTO Usuarios (usuario, password, rol) VALUES (?, ?, ?)", ("admin", hashed_admin, "admin"))
-    
+
+    cursor.execute("""
+        UPDATE Usuarios 
+        SET estado_aprobacion='aprobado', estado_perfil='completo'
+        WHERE rol='admin';
+    """)
     conn.commit()
     conn.close()
 
@@ -193,68 +202,95 @@ def login():
         usuario = request.form.get("usuario")
         password = request.form.get("password")
 
-        data = query_db("SELECT id, password, rol FROM Usuarios WHERE usuario=?", (usuario,), fetch=True)
-        if data and check_password_hash(data[0]["password"], password):
-            session["usuario"] = usuario
-            session["usuario_id"] = data[0]["id"]
-            session["rol"] = data[0]["rol"] or "invitado"
-
-            # redirección según rol: admin -> index (admin), supervisor -> index, empleado -> dashboard
-            if session["rol"] == "empleado":
-                return redirect(url_for("index"))
-            elif session["rol"] == "supervisor":
-                return redirect(url_for("index"))
-            else:
-                return redirect(url_for("index"))
-        else:
+        data = query_db("SELECT id, password, rol, estado_aprobacion, estado_perfil FROM Usuarios WHERE usuario=?", (usuario,), fetch=True)
+        if not data:
             return render_template("login.html", error="Credenciales incorrectas.")
+        row = data[0]
+
+        if not check_password_hash(row["password"], password):
+            return render_template("login.html", error="Credenciales incorrectas.")
+
+        # Si rol empleado/supervisor y todavía pendiente de aprobación
+        if row["rol"] in ("empleado", "supervisor"):
+            if row["estado_aprobacion"] == "pendiente":
+                return render_template("login.html", error="Tu cuenta está pendiente de aprobación por un administrador.")
+            if row["estado_aprobacion"] == "rechazado":
+                return render_template("login.html", error="Tu cuenta fue rechazada por el administrador.")
+
+        # Si perfil incompleto, redirigir a completar_perfil
+        if row["estado_perfil"] != "completo":
+            # Guardamos usuario en session temporal para que completar_perfil lo tome si fuese necesario
+            session["usuario"] = usuario
+            session["usuario_id"] = row["id"]
+            session["rol"] = row["rol"]
+            flash("Por favor completa tu perfil antes de continuar.", "error")
+            return redirect(url_for("completar_perfil"))
+
+        # todo ok: crear session y redirigir
+        session["usuario"] = usuario
+        session["usuario_id"] = row["id"]
+        session["rol"] = row["rol"] or "invitado"
+        return redirect(url_for("index"))
     return render_template("login.html")
+
+
 
 
 @RH.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        usuario = request.form.get("usuario").strip()
-        password = request.form.get("password").strip()
+        usuario = request.form.get("usuario", "").strip()
+        password = request.form.get("password", "").strip()
         rol = request.form.get("rol", "invitado")
+
         if not usuario or not password:
             return render_template("register.html", error="Por favor completa todos los campos.")
-        hashed_pw = generate_password_hash(password)
-        success = query_db("INSERT INTO Usuarios (usuario, password, rol) VALUES (?, ?, ?)", (usuario, hashed_pw, rol))
-        if not success:
-            return render_template("register.html", error="El usuario ya existe.")
-        # crear session
-        session["usuario"] = usuario
-        # buscar id del usuario creado
-        row = query_db("SELECT id, rol FROM Usuarios WHERE usuario = ?", (usuario,), fetch=True)
-        if row:
-            session["usuario_id"] = row[0]["id"]
-            session["rol"] = row[0]["rol"]
-        # si el rol requiere completar perfil (empleado/supervisor) redirigir
+
+        # Verificar si ya existe en la BD (para evitar conflicto si alguien ya fue creado manualmente)
+        exists = query_db("SELECT id FROM Usuarios WHERE usuario = ?", (usuario,), fetch=True)
+        if exists:
+            return render_template("register.html", error="El usuario ya existe. Si es tu caso, intenta iniciar sesión o usa recuperar contraseña.")
+
+        # Guardar temporalmente en session (NO insertamos en la BD aún)
+        session["registrando"] = {
+            "usuario": usuario,
+            "password_hash": generate_password_hash(password),
+            "rol": rol
+        }
+
+        # Si el rol requiere completar perfil, redirigir para completar
         if rol in ("empleado", "supervisor"):
             return redirect(url_for("completar_perfil"))
-        return redirect(url_for("index"))
+
+        # Si es admin u otro rol que NO requiere perfil, insertamos directamente como aprobado
+        query_db("""
+            INSERT INTO Usuarios (usuario, password, rol, estado_aprobacion, estado_perfil)
+            VALUES (?, ?, ?, 'aprobado', 'completo')
+        """, (usuario, session["registrando"]["password_hash"], rol))
+
+        session.pop("registrando", None)
+        flash("Registro exitoso. Ya puedes iniciar sesión.", "success")
+        return redirect(url_for("login"))
+
     return render_template("register.html")
+
+
 
 @RH.route("/completar_perfil", methods=["GET", "POST"])
 def completar_perfil():
-    if "usuario" not in session:
-        return redirect(url_for("login"))
+    # usuario debe haber empezado el registro (tener datos temporales)
+    reg = session.get("registrando")
+    if not reg and "usuario" not in session:
+        flash("No hay registro en proceso. Por favor crea una cuenta primero.", "error")
+        return redirect(url_for("register"))
 
-    # si ya tiene empleado vinculado, no permitir
-    user_row = query_db("SELECT id, rol FROM Usuarios WHERE usuario = ?", (session["usuario"],), fetch=True)
-    if not user_row:
-        return redirect(url_for("logout"))
-    user_id = user_row[0]["id"]
-    rol = user_row[0]["rol"]
-
-    # Solo empleados o supervisores necesitan completar
-    if rol not in ("empleado", "supervisor"):
-        flash("No aplica completar perfil para este rol.", "error")
+    # Si ya existe sesión activa de usuario aprobado (caso raro), redirigir
+    if "usuario" in session and session.get("rol") not in (None, ""):
+        # Si ya está logeado y tiene perfil completo, ir al index
         return redirect(url_for("index"))
 
-    # POST: crear Empleado y enlazar
     if request.method == "POST":
+        # Campos del formulario
         cedula = request.form.get("cedula")
         nombre = request.form.get("nombre")
         fecha_nacimiento = request.form.get("fecha_nacimiento")
@@ -267,22 +303,87 @@ def completar_perfil():
         salario_base = request.form.get("salario_base")
         estado = request.form.get("estado", "Activo")
 
-        # insertar empleado con usuario_id = user_id
-        exito = query_db("""
-            INSERT INTO Empleados (cedula, nombre, fecha_nacimiento, direccion, telefono, correo,
-                 departamento, puesto, fecha_ingreso, salario_base, estado, usuario_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (cedula, nombre, fecha_nacimiento, direccion, telefono, correo,
-              departamento, puesto, fecha_ingreso, salario_base, estado, user_id))
+        # Si no tenemos los datos temporales por algún motivo -> pedir que se registre de nuevo
+        if not reg:
+            flash("No se encontraron los datos de registro. Por favor regístrate de nuevo.", "error")
+            return redirect(url_for("register"))
 
-        if not exito:
-            return render_template("completar_perfil.html", error="Error al guardar. Verifique los datos.")
+        # 1) Insertar en Usuarios (ya que ahora completó el perfil)
+        # Si el rol es admin, lo marcamos aprobado de inmediato; si no, queda pendiente de aprobación
+        estado_aprob = 'aprobado' if reg["rol"] == "admin" else 'pendiente'
+        estado_perf = 'completo'
 
-        flash("Perfil completado correctamente. Ya puedes usar tu panel.", "success")
-        return redirect(url_for("index"))
+        insert_user_ok = query_db("""
+            INSERT INTO Usuarios (usuario, password, rol, estado_aprobacion, estado_perfil)
+            VALUES (?, ?, ?, ?, ?)
+        """, (reg["usuario"], reg["password_hash"], reg["rol"], estado_aprob, estado_perf))
 
-    # GET: mostrar formulario
-    return render_template("completar_perfil.html", usuario=session["usuario"], rol=rol)
+        if not insert_user_ok:
+            flash("Error al crear el usuario. Probablemente el nombre de usuario ya existe.", "error")
+            return redirect(url_for("register"))
+
+        # Recuperar id del usuario insertado
+        row = query_db("SELECT id FROM Usuarios WHERE usuario = ?", (reg["usuario"],), fetch=True)
+        if not row:
+            flash("Error interno al crear el usuario.", "error")
+            return redirect(url_for("register"))
+        usuario_id = row[0]["id"]
+
+        # 2) Insertar en Empleados (si aplica)
+        if reg["rol"] in ("empleado", "supervisor"):
+            exito_emp = query_db("""
+                INSERT INTO Empleados (cedula, nombre, fecha_nacimiento, direccion, telefono, correo,
+                    departamento, puesto, fecha_ingreso, salario_base, estado, usuario_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (cedula, nombre, fecha_nacimiento, direccion, telefono, correo,
+                  departamento, puesto, fecha_ingreso, salario_base, estado, usuario_id))
+
+            if not exito_emp:
+                # Si falla crear empleado, borramos el usuario recién creado para no dejar inconsistencia
+                query_db("DELETE FROM Usuarios WHERE id = ?", (usuario_id,))
+                flash("Error al guardar datos del perfil. Intenta de nuevo.", "error")
+                return redirect(url_for("completar_perfil"))
+
+        # Limpiar sesión temporal
+        session.pop("registrando", None)
+
+        # Si el usuario requiere aprobación del admin
+        if estado_aprob == 'pendiente':
+            flash("Tu perfil fue completado. Ahora está pendiente de aprobación del administrador.", "success")
+            # opcional: cerrar la sesión para que no puedan navegar
+            return redirect(url_for("login"))
+        else:
+            # aprobado (admin), creamos sesión y redirigimos
+            session["usuario"] = reg["usuario"]
+            session["usuario_id"] = usuario_id
+            session["rol"] = reg["rol"]
+            flash("Perfil completado y cuenta activa.", "success")
+            return redirect(url_for("index"))
+
+    # GET -> mostrar formulario; prefill con session["registrando"] si quieres
+    datos_prefill = {
+        "usuario": reg["usuario"],
+        "rol": reg["rol"]
+    } if reg else {}
+
+    return render_template("completar_perfil.html", usuario=datos_prefill.get("usuario"), rol=datos_prefill.get("rol"))
+
+
+@RH.route("/cancelar_registro")
+def cancelar_registro():
+    # Limpiar datos de session temporal
+    session.pop("registrando", None)
+    # opcional: si hay usuario_id temporal en session y existe en DB y está pendiente, borrarlo
+    uid = session.get("usuario_id")
+    if uid:
+        row = query_db("SELECT estado_aprobacion FROM Usuarios WHERE id = ?", (uid,), fetch=True)
+        if row and row[0]["estado_aprobacion"] == "pendiente":
+            query_db("DELETE FROM Usuarios WHERE id = ?", (uid,))
+    session.pop("usuario_id", None)
+    session.pop("usuario", None)
+    session.pop("rol", None)
+    flash("Registro cancelado.", "info")
+    return redirect(url_for("register"))
 
 
 @RH.route("/logout")
@@ -295,28 +396,35 @@ def logout():
 #=======
 
 @RH.route("/")
-
 def index():
     if "usuario" not in session:
         return redirect(url_for("login"))
+
+    # Si es empleado/supervisor y no completó perfil → redirigir
+    if session.get("rol") in ("empleado", "supervisor"):
+        emp = query_db("SELECT id FROM Empleados WHERE usuario_id = ?", (session["usuario_id"],), fetch=True)
+        if not emp:
+            flash("Debes completar tu perfil antes de usar el sistema.", "error")
+            return redirect(url_for("completar_perfil"))
+
     return render_template("index.html", usuario=session["usuario"])
+
 
 @RH.route("/dashboard")
 def dashboard_empleado():
     if "usuario" not in session:
         return redirect(url_for("login"))
-    # sólo empleados
     if session.get("rol") != "empleado":
         flash("Acceso restringido al dashboard de empleados.", "error")
         return redirect(url_for("index"))
 
     user_id = session.get("usuario_id")
-    # traer empleado vinculado
-    emp = query_db("SELECT * FROM Empleados WHERE usuario_id = ?", (user_id,), fetch=True)
-    if not emp:
+    emp_rows = query_db("SELECT * FROM Empleados WHERE usuario_id = ?", (user_id,), fetch=True)
+    if not emp_rows:
         flash("Completa tu perfil para acceder al dashboard.", "error")
         return redirect(url_for("completar_perfil"))
-    emp = emp[0]
+
+    emp = emp_rows[0]
 
     # Evaluaciones propias
     evaluaciones = query_db("SELECT * FROM Evaluaciones WHERE empleado_id = ? ORDER BY fecha DESC", (emp["id"],), fetch=True) or []
@@ -339,6 +447,8 @@ def dashboard_empleado():
 # ==================================
 # SECCIÓN DE EMPLEADOS
 # ==================================
+
+
 
 @RH.route("/empleados")
 def empleados():
@@ -639,6 +749,169 @@ def eliminar_evaluacion(id):
     flash("🗑️ Evaluación eliminada correctamente.", "success")
     return redirect(url_for("evaluaciones"))
 
+# ==========================
+# GESTION DE NOMINA
+# ==========================
+
+# ==========================
+# NÓMINA
+# ==========================
+@RH.route("/nomina")
+@role_required(["admin", "supervisor"])
+def nomina():
+    sql = """
+        SELECT n.id, n.fecha_pago, n.salario_bruto, n.deducciones, n.beneficios, 
+               n.salario_neto, n.comprobante,
+               e.nombre AS empleado_nombre, e.cedula AS empleado_cedula
+        FROM Nomina n
+        LEFT JOIN Empleados e ON n.empleado_id = e.id
+        ORDER BY n.id DESC
+    """
+    data = query_db(sql, fetch=True) or []
+    empleados = query_db("SELECT id, nombre, cedula, salario_base FROM Empleados ORDER BY nombre", fetch=True) or []
+    return render_template("nomina.html", nominas=data, empleados=empleados)
+
+
+@RH.route("/nomina/agregar", methods=["POST"])
+@role_required(["admin", "supervisor"])
+def agregar_nomina():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    empleado_id = request.form.get("empleado_id")
+    try:
+        salario_bruto = float(request.form.get("salario_bruto") or 0)
+        deducciones = float(request.form.get("deducciones") or 0)
+        beneficios = float(request.form.get("beneficios") or 0)
+    except ValueError:
+        flash("Valores numéricos inválidos.", "error")
+        return redirect(url_for("nomina"))
+
+    fecha_pago = request.form.get("fecha_pago") or None
+    salario_neto = salario_bruto - deducciones + beneficios
+
+    success = query_db("""
+        INSERT INTO Nomina (empleado_id, fecha_pago, salario_bruto, deducciones, beneficios, salario_neto)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (empleado_id, fecha_pago, salario_bruto, deducciones, beneficios, salario_neto))
+
+    if not success:
+        flash("Error al guardar la nómina.", "error")
+    else:
+        flash("💰 Nómina generada exitosamente.", "success")
+    return redirect(url_for("nomina"))
+
+
+@RH.route("/nomina/eliminar/<int:id>")
+@role_required(["admin"])
+def eliminar_nomina(id):
+    query_db("DELETE FROM Nomina WHERE id = ?", (id,))
+    flash("🗑️ Registro de nómina eliminado.", "success")
+    return redirect(url_for("nomina"))
+
+
+# Generar comprobante (PDF simple — guarda en /static)
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+import os
+
+@RH.route("/nomina/comprobante/<int:id>")
+@role_required(["admin","supervisor"])
+def nomina_comprobante(id):
+    row = query_db("""
+        SELECT n.*, e.nombre, e.cedula
+        FROM Nomina n
+        JOIN Empleados e ON n.empleado_id = e.id
+        WHERE n.id=?
+    """, (id,), fetch=True)
+
+    if not row:
+        flash("Comprobante no encontrado.", "error")
+        return redirect(url_for("nomina"))
+    r = row[0]
+
+    # nombre del archivo en static
+    filename = f"comprobante_nomina_{id}.pdf"
+    static_path = os.path.join("static", filename)
+    # Ruta absoluta si tu app lo requiere, reportlab puede escribirla tal cual
+    c = canvas.Canvas(static_path, pagesize=letter)
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(30, 760, "Comprobante de Nómina")
+    c.setFont("Helvetica", 11)
+    c.drawString(30, 740, f"Empleado: {r['nombre']} ({r['cedula']})")
+    c.drawString(30, 720, f"Fecha de pago: {r['fecha_pago']}")
+    c.drawString(30, 700, f"Salario bruto: {r['salario_bruto']}")
+    c.drawString(30, 680, f"Deducciones: {r['deducciones']}")
+    c.drawString(30, 660, f"Beneficios: {r['beneficios']}")
+    c.drawString(30, 640, f"Salario neto: {r['salario_neto']}")
+    c.save()
+
+    # Actualizar campo comprobante en DB con la ruta relativa para que el template la use
+    query_db("UPDATE Nomina SET comprobante = ? WHERE id = ?", (f"/static/{filename}", id))
+    return redirect(f"/static/{filename}")
+
+
+# API helper: devuelve datos del empleado (para autocompletar)
+@RH.route("/empleado/<int:id>")
+def obtener_empleado(id):
+    row = query_db("SELECT id, nombre, cedula, salario_base, departamento, puesto FROM Empleados WHERE id = ?", (id,), fetch=True)
+    if not row:
+        return jsonify({"error": "Empleado no encontrado"}), 404
+    e = row[0]
+    return jsonify({
+        "id": e["id"],
+        "nombre": e["nombre"],
+        "cedula": e["cedula"],
+        "salario_base": e["salario_base"],
+        "departamento": e["departamento"],
+        "puesto": e["puesto"]
+    })
+#==========================
+#SOLICITUDES
+#==========================
+@RH.route("/solicitudes")
+@role_required(["admin"])
+def solicitudes():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    # Asegúrate de usar fetch=True para obtener filas
+    sql = "SELECT id, usuario, rol, estado_aprobacion, estado_perfil FROM Usuarios WHERE estado_aprobacion = 'pendiente' ORDER BY id DESC"
+    data = query_db(sql, fetch=True)
+
+    # Si query_db devolvió False por algún error, evita pasar un bool a la plantilla
+    if not data:
+        data = []  # fallback seguro: plantilla verá "no hay solicitudes"
+
+    # opcional: convertir rows a dicts si necesitas .get en template
+    solicitudes_list = []
+    for r in data:
+        solicitudes_list.append({
+            "id": r["id"],
+            "usuario": r["usuario"],
+            "rol": r["rol"],
+            "estado_aprobacion": r.get("estado_aprobacion") if isinstance(r, dict) else r["estado_aprobacion"],
+            "estado_perfil": r.get("estado_perfil") if isinstance(r, dict) else r["estado_perfil"]
+        })
+
+    return render_template("solicitudes.html", solicitudes=solicitudes_list)
+
+
+@RH.route("/solicitudes/aprobar/<int:id>")
+@role_required(["admin"])
+def aprobar_solicitud(id):
+    query_db("UPDATE Usuarios SET estado_aprobacion='aprobado' WHERE id=?", (id,))
+    flash("Usuario aprobado. Ahora puede completar su perfil.", "success")
+    return redirect("/solicitudes")
+
+@RH.route("/solicitudes/rechazar/<int:id>")
+@role_required(["admin"])
+def rechazar_solicitud(id):
+    query_db("UPDATE Usuarios SET estado_aprobacion='rechazado' WHERE id=?", (id,))
+    flash("Usuario rechazado.", "error")
+    return redirect("/solicitudes")
+
+
 
 # ==========================
 # LÓGICA DEL PROGRAMA
@@ -647,3 +920,4 @@ if __name__ == "__main__":
     inicializar_bd()
     configurar_sqlite()
     RH.run(debug=True)
+    
