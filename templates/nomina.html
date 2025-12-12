@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gestión de Nómina</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
+      background-size: 400% 400%;
+      animation: gradientBG 18s ease infinite;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;} }
+    .animate-fadeInUp { animation: fadeInUp .5s ease both; }
+    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
+  </style>
+</head>
+<body class="p-6">
+
+  <header class="flex items-center justify-between text-white mb-6">
+    <div>
+      <h1 class="text-3xl font-extrabold">💰 Gestión de Nómina</h1>
+      <p class="text-gray-200 text-sm">Administración de pagos y comprobantes</p>
+    </div>
+    <div class="space-x-4">
+      <a href="/" class="bg-white text-indigo-700 px-4 py-2 rounded shadow">Volver</a>
+      <a href="/logout" class="text-sm text-gray-100 underline">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <!-- Formulario Agregar Nómina -->
+  <section class="bg-white p-6 rounded-xl soft-glow mb-6 animate-fadeInUp">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Generar nómina</h2>
+    <form id="form-nomina" action="/nomina/agregar" method="POST" class="grid md:grid-cols-4 gap-4">
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Empleado *</label>
+        <select id="empleado_select" name="empleado_id" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+          <option value="">-- Selecciona --</option>
+          {% for e in empleados %}
+          <option value="{{ e.id }}" data-salario="{{ e.salario_base }}">{{ e.nombre }} ({{ e.cedula }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Salario Bruto *</label>
+        <input id="salario_bruto" type="number" name="salario_bruto" step="0.01" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Deducciones</label>
+        <input id="deducciones" type="number" name="deducciones" step="0.01" value="0" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Beneficios</label>
+        <input id="beneficios" type="number" name="beneficios" step="0.01" value="0" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Fecha de pago *</label>
+        <input id="fecha_pago" type="date" name="fecha_pago" required class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Salario Neto</label>
+        <input id="salario_neto" type="text" readonly class="w-full border rounded p-2 bg-gray-50">
+      </div>
+
+      <div class="md:col-span-4">
+        <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 transition">
+          Generar Nómina
+        </button>
+      </div>
+
+    </form>
+  </section>
+
+  <!-- Tabla de Nóminas -->
+  <section class="bg-white p-6 rounded-xl soft-glow animate-fadeInUp">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Nóminas generadas</h2>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-300">
+        <thead class="bg-indigo-600 text-white">
+          <tr>
+            <th class="px-3 py-2">Empleado</th>
+            <th class="px-3 py-2">Fecha pago</th>
+            <th class="px-3 py-2">Bruto</th>
+            <th class="px-3 py-2">Deducciones</th>
+            <th class="px-3 py-2">Beneficios</th>
+            <th class="px-3 py-2">Neto</th>
+            <th class="px-3 py-2">Comprobante</th>
+            <th class="px-3 py-2 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for n in nominas %}
+          <tr class="border-b hover:bg-gray-50">
+            <td class="px-3 py-2">{{ n.empleado_nombre }} <span class="text-xs text-gray-500">({{ n.empleado_cedula }})</span></td>
+            <td class="px-3 py-2">{{ n.fecha_pago }}</td>
+            <td class="px-3 py-2">{{ n.salario_bruto }}</td>
+            <td class="px-3 py-2">{{ n.deducciones }}</td>
+            <td class="px-3 py-2">{{ n.beneficios }}</td>
+            <td class="px-3 py-2 font-semibold">{{ n.salario_neto }}</td>
+            <td class="px-3 py-2">
+              {% if n.comprobante %}
+                <a href="{{ n.comprobante }}" target="_blank" class="text-blue-600 underline">Descargar</a>
+              {% else %}
+                <a href="/nomina/comprobante/{{ n.id }}" class="text-indigo-600 underline">Generar PDF</a>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-center">
+              <a href="/nomina/eliminar/{{ n.id }}" onclick="return confirm('¿Eliminar este registro?');" class="text-red-600 underline">Eliminar</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center py-4 text-gray-500">No hay registros de nómina.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    // Elementos
+    const empleadoSelect = document.getElementById('empleado_select');
+    const salarioBruto = document.getElementById('salario_bruto');
+    const deducciones = document.getElementById('deducciones');
+    const beneficios = document.getElementById('beneficios');
+    const salarioNeto = document.getElementById('salario_neto');
+
+    // Función para calcular el neto y mostrarlo
+    function calcularNeto() {
+      const bruto = parseFloat(salarioBruto.value || 0);
+      const ded = parseFloat(deducciones.value || 0);
+      const ben = parseFloat(beneficios.value || 0);
+      const neto = bruto - ded + ben;
+      // mostrar con 2 decimales
+      salarioNeto.value = isNaN(neto) ? '' : neto.toFixed(2);
+    }
+
+    // Al cambiar selección: solicitar datos del empleado y poblar campos
+    empleadoSelect.addEventListener('change', async function() {
+      const id = this.value;
+      if (!id) {
+        salarioBruto.value = '';
+        salarioNeto.value = '';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/empleado/${id}`);
+        if (!res.ok) throw new Error('Empleado no encontrado');
+        const data = await res.json();
+        // si la API devuelve salario_base, usarlo; si no, usar atributo data-salario del option
+        const salario = data.salario_base ?? (this.selectedOptions[0].dataset.salario ?? 0);
+        salarioBruto.value = salario || 0;
+        deducciones.value = 0;
+        beneficios.value = 0;
+        calcularNeto();
+      } catch (err) {
+        console.error(err);
+        alert('Error al cargar datos del empleado.');
+      }
+    });
+
+    // Recalcular cuando cambien deducciones o beneficios o salario
+    [salarioBruto, deducciones, beneficios].forEach(el => {
+      el.addEventListener('input', calcularNeto);
+    });
+
+    // Calcular al cargar la página por si hay valores pre-llenados
+    window.addEventListener('load', calcularNeto);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/static/1.jpeg" type="image/x-icon">
+  <title>Solicitudes Pendientes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      background: linear-gradient(-45deg, #0f172a, #0d9488, #1e3a8a, #4f46e5);
+      background-size: 400% 400%;
+      animation: gradientBG 18s ease infinite;
+      min-height: 100vh;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .soft-glow { box-shadow: 0 8px 30px rgba(2,6,23,0.25); }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;} }
+    .animate-fadeInUp { animation: fadeInUp .5s ease both; }
+
+    /* Toasts */
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:none;} }
+    @keyframes fadeOut { from{opacity:1;} to{opacity:0;transform:translateY(-10px);} }
+    .toast { animation: fadeIn .3s ease both; }
+    .toast.hide { animation: fadeOut .5s ease forwards; }
+  </style>
+</head>
+
+<body class="p-6">
+
+  <!-- TOASTS -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-50">
+      {% for category, message in messages %}
+        <div class="toast px-4 py-3 rounded-xl shadow-lg text-sm font-medium 
+        {% if category == 'success' %}
+          bg-gradient-to-r from-emerald-500 to-teal-500 text-white
+        {% else %}
+          bg-gradient-to-r from-rose-500 to-pink-500 text-white
+        {% endif %}
+        ">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- HEADER -->
+    <header class="flex items-center justify-between text-white animate-fadeInUp">
+      <div>
+        <h1 class="text-3xl font-extrabold">📝 Solicitudes Pendientes</h1>
+        <p class="text-gray-200 text-sm">Usuarios esperando aprobación del administrador</p>
+      </div>
+      <div class="space-x-3">
+        <a href="/" class="bg-white text-indigo-700 px-4 py-2 rounded shadow">Volver</a>
+        <a href="/logout" class="text-gray-100 underline">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <section class="bg-white p-6 rounded-xl soft-glow animate-fadeInUp">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">Listado de solicitudes</h2>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full table-auto border border-gray-300 rounded">
+          <thead class="bg-indigo-600 text-white">
+            <tr>
+              <th class="px-4 py-2 text-left">Usuario</th>
+              <th class="px-4 py-2 text-left">Rol solicitado</th>
+              <th class="px-4 py-2 text-center">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for s in solicitudes %}
+            <tr class="border-b hover:bg-gray-50">
+              <td class="px-4 py-3">{{ s["usuario"] }}</td>
+              <td class="px-4 py-3">{{ s["rol"] }}</td>
+              <td class="px-4 py-3 text-center space-x-3">
+                <a href="/solicitudes/aprobar/{{ s['id'] }}" 
+                   class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded">
+                   ✔ Aprobar
+                </a>
+                <a href="/solicitudes/rechazar/{{ s['id'] }}" 
+                   class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded">
+                   ✖ Rechazar
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="py-4 text-center text-gray-500">
+                No hay solicitudes pendientes.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <footer class="text-center text-white text-sm">By Saulo A. - Recursos Humanos</footer>
+
+  </div>
+
+  <script>
+    // autoCerrar toasts
+    setTimeout(() => {
+      document.querySelectorAll('.toast').forEach((el, i) => {
+        setTimeout(() => {
+          el.classList.add('hide');
+          el.remove();
+        }, i * 300 + 3500);
+      });
+    }, 200);
+  </script>
+
+</body>
+</html>
